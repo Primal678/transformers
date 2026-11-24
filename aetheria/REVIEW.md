@@ -2,6 +2,8 @@
 
 Scope: internal consistency, feasibility, and regulatory exposure of [`GDD.md`](./GDD.md). Ordered by severity.
 
+> **Status:** All findings below are addressed in GDD v1.1 — see the changelog at the end of [`GDD.md`](./GDD.md).
+
 ## Blockers (the document contradicts itself)
 
 ### 1. The Lumen→Aether ATM breaks the core economic promise
