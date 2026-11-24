@@ -6,7 +6,7 @@
 
 | | |
 |---|---|
-| Document Version | 1.1 |
+| Document Version | 1.2 |
 | Role | Chief Product Officer & Lead Game Architect |
 | Target Platforms | iOS, Android, PC (Windows/macOS), Web (Pixel Streaming, trial/onboarding) |
 | Engine | Unreal Engine 5.4+ |
@@ -15,7 +15,7 @@
 | Model | Free-to-Play with Premium Subscription |
 | Audience | 13+ globally (16+ where local law requires); several features 18+ only — see §1.1 |
 
-> See [`REVIEW.md`](./REVIEW.md) for the v1.0 review that drove this revision, and the [Changelog](#changelog-v10--v11) at the end.
+> See [`REVIEW.md`](./REVIEW.md) for the v1.0 review, [`ECONOMY_MODEL.md`](./ECONOMY_MODEL.md) for the sink/faucet simulation, and the changelog at the end.
 
 ---
 
@@ -57,7 +57,7 @@ The loop is engineered for a 12–25 minute mobile session that converts a passi
 | **2. Express** (1–3 min) | Open Wardrobe; adjust outfit, hair, body morph, or animation set. | Real-time preview in a studio-lit wardrobe scene (Lumen on supported PC hardware; high-quality baked lighting elsewhere). "Fit Check" button posts a snapshot to a zone-local feed for reactions. | Limited-time "Drop Window" items appear in wardrobe with a soft countdown; not paywalled, but earnable via play or tradeable on the market. |
 | **3. Socialize** (3–12 min) | Enter a zone; approach a cluster; use proximity voice, gesture (wave/nod/hug), or deploy an Action Card (guitar, dance, cooking). | Mood system reacts: avatars blush, laugh, or withdraw based on gesture responses and (where enabled) chat sentiment. Action Card co-performance triggers a synchronized animation with nearby players. | Social "Resonance" meter fills with every positive interaction; at full, grants a Resonance Crate containing an **account-bound** cosmetic shard. |
 | **4. Create/Compete** (12–20 min) | Join a Fashion Show, Karaoke room, or roleplay scenario (Hospital shift, Café rush). | Mini-game scores feed into a weekly Creator Leaderboard. Top performers earn "Aether" (tradeable soft currency) and a featured slot in the zone's Hall of Fame. | Leaderboard visibility is the primary status signal; no power and no status is sold. Every player gets exactly one ranked entry. VIPs get an unranked practice mode, a cosmetic leaderboard frame, and a replay-analysis tool. |
-| **5. Circulate** (20–25 min) | List an item on the Marketplace, browse player-created furniture, or place a bid on a rare animation set. | Marketplace is fully player-driven; Aetheria takes a 5% transaction fee in Aether, which is burned (removed from economy). | The 5% sink is the primary inflation-control mechanism. VIP sellers pay 3% instead of 5%, a convenience perk, not an exclusive right. |
+| **5. Circulate** (20–25 min) | List an item on the Marketplace, browse player-created furniture, place a bid on a rare animation set, or buy from the rotating first-party Aether Catalogue. | Marketplace is fully player-driven; Aetheria takes a 5% transaction fee in Aether, which is burned (removed from economy). Catalogue purchases are burned in full. | The first-party Catalogue and upkeep are the primary inflation controls; the marketplace fee is a secondary sink. VIP sellers pay 3% instead of 5%, a convenience perk, not an exclusive right. |
 | **6. Return Hook** | Session ends; avatar enters "Idle Mood" visible to friends. | Push notification: "Mira left you a Resonance gift" or "Your Marketplace listing sold." | Idle Mood and async gifts create a social obligation loop that does not require the recipient to be online simultaneously. |
 
 ---
@@ -138,7 +138,8 @@ Mood manifests visibly through idle animation blending, facial expression, postu
 **The Player-Driven Marketplace:**
 
 - **Listing types:** Fixed-price and timed auction with bid/buyout.
-- **Fee structure:** 5% Aether fee on all sales (burned); 3% for VIP sellers. The fee is the primary currency sink — it removes Aether from circulation with every transaction, counteracting faucet inflation.
+- **Fee structure:** 5% Aether fee on resales (burned); 3% for VIP sellers. Modelling shows the fee is a *secondary* sink (~2–3% of marketplace spend); it is a fine-tuning knob, not the stabilizer.
+- **First-party Aether Catalogue:** a rotating, seasonal catalogue of furniture, base-variant cosmetics, base Action Cards, and consumable party items sold for Aether and burned in full. This, with apartment upkeep and the UGC platform share, is the primary sink. Includes aspirational high-price items aimed at Aether-rich veterans.
 - **Teen spending caps:** Teen accounts have weekly Aether spend and trade-value caps, and cannot trade directly with Adult accounts outside the marketplace.
 - **Creator Studio (UGC Pipeline):** Players design furniture and simple clothing using an in-engine tool with curated asset packs **purchased with Aether**. Approved items enter the marketplace; the creator earns 70% of the Aether sale price, 30% is burned as platform fee and curation cost. The Creator Studio is an economy sink and engagement driver, not a direct revenue line. This mirrors the IMVU model that proved third-party creators can sustain a virtual economy.
 - **Anti-RMT safeguards:** Aether is non-redeemable for real currency. All trades are logged; velocity limits, price-outlier detection, and linked-account analysis flag wash trading and value transfer to alts.
@@ -152,9 +153,9 @@ Mood manifests visibly through idle animation blending, facial expression, postu
 
 **Inflation Control (Sink-and-Faucet Equilibrium):**
 
-- **Faucets:** Mini-game rewards, daily Sparks, roleplay wages, rewarded ads (capped 3/day), Creator Shard drops.
-- **Sinks:** Marketplace fee (5%/3%), apartment upkeep (Aether), Creator Studio asset-pack purchases (Aether), cosmetic repair/refresh fees for Action Card VFX (small, frequent Aether drain), Social Casino house edge, and seasonal Aether burns (limited-time events where donating Aether to a community goal unlocks a server-wide reward).
-- **Dynamic tuning:** Live-ops dashboard tracks net Aether flow per player cohort; if circulating Aether exceeds a threshold, the marketplace fee temporarily rises to 6% for 48 hours (communicated transparently as an "Economy Health Adjustment").
+- **Faucets:** Mini-game rewards, daily Sparks, roleplay wages, rewarded ads (capped 3/day), Creator Shard drops. Starting target: ~255 Aether per active player per day in total; healthy veteran balance ≤10 days of income.
+- **Sinks:** First-party Aether Catalogue (100% burn), UGC platform share (30%), marketplace resale fee (5%/3%), apartment upkeep (Aether), Creator Studio asset-pack purchases (Aether), cosmetic repair/refresh fees for Action Card VFX (small, frequent Aether drain), Social Casino house edge, and seasonal Aether burns (limited-time events where donating Aether to a community goal unlocks a server-wide reward).
+- **Dynamic tuning ("Economy Health Adjustment"):** Live-ops tracks the 7-day slope of median veteran balances (players active 30+ days) and net Aether flow per cohort. When the slope stays positive, the response ladder is: (1) an unscheduled Catalogue drop or aspirational sink; (2) faucet rebalancing in the next content update; (3) only then a temporary resale-fee rise to 6% for 48 hours. Every adjustment is announced transparently. Each faucet event (e.g. double-Aether week) ships with a matching Catalogue drop.
 
 ### Pillar 4 — World & Locations: Four Biomes, One Persistent Identity
 
@@ -299,7 +300,7 @@ Avakin's monetization is perceived as extractive because the best items are prem
 | Status/reward farming via alts | Unique qualified-giver rules, linked-account detection, per-giver caps on votes and cheers, award voiding. |
 | UGC moderation burden (Creator Studio) | Curated asset packs (no free-form mesh upload at launch); AI texture/name screening; human review queue for first-time creators; revenue hold until item passes moderation. |
 | Voice chat toxicity | AI real-time transcription + classifier; default push-to-talk on mobile; visible mic halo; progressive discipline ladder; VIPs held to same standard (no "paid immunity"). |
-| Economy inflation from mini-game faucets | Dynamic marketplace fee adjustment; seasonal Aether burns; casino house edge; Machinations simulation before each content update; live-ops economy runbook. |
+| Economy inflation from mini-game faucets | First-party Catalogue as primary sink; slope-triggered Economy Health ladder; event-paired Catalogue drops; seasonal Aether burns; simulation (see `ECONOMY_MODEL.md`, then Machinations) before each content update; live-ops economy runbook. |
 | Regulatory risk on casino mini-games | 18+ with age assurance; Aether-only wagering with no purchase path and no cash-out; legal review per territory; zone can be geo-disabled without affecting core loop. |
 | Unsourced market claims | All competitor figures cited to primary sources and legal-reviewed before external circulation. |
 
@@ -308,6 +309,14 @@ Avakin's monetization is perceived as extractive because the best items are prem
 *Aetheria is not a louder Avakin. It is a more honest one. It bets that the next decade of social virtual worlds belongs to the platform that treats the avatar as an emotional interface, the economy as a commons to be governed, and the player as a citizen rather than a wallet.*
 
 ---
+
+## Changelog (v1.1 → v1.2)
+
+Economy simulation pass ([`ECONOMY_MODEL.md`](./ECONOMY_MODEL.md)):
+
+- The marketplace fee is reclassified as a secondary sink. A first-party Aether Catalogue is added as the primary sink.
+- The Economy Health Adjustment now triggers on the trend in veteran balances and uses a response ladder: catalogue, then faucets, then fee. A threshold-triggered fee rise would have stayed on permanently and barely moved supply.
+- Starting faucet target set at ~255 Aether per active player per day. Faucet events ship with a matching catalogue drop.
 
 ## Changelog (v1.0 → v1.1)
 
