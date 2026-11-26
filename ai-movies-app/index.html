@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Synthetic Cinema</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: projection-booth archive. Sticky control bar, poster grid of "reels", detail drawer. */
+:root {
+  --bg: #eef0f4; --surface: #ffffff; --surface-2: #e4e7ee; --fg: #151823; --muted: #5b6273;
+  --line: #d3d8e2; --accent: #a85a06; --accent-ink: #ffffff; --chip: #f4ead9;
+  --display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1016; --surface: #171a23; --surface-2: #21252f; --fg: #ebe8e1; --muted: #9aa0ae;
+  --line: #2a2f3b; --accent: #f0a443; --accent-ink: #1a1206; --chip: #2b2418; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1016; --surface: #171a23; --surface-2: #21252f; --fg: #ebe8e1; --muted: #9aa0ae;
+  --line: #2a2f3b; --accent: #f0a443; --accent-ink: #1a1206; --chip: #2b2418; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg) }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+a { color: var(--accent) }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+header.top { padding-block: 40px 20px; display: grid; gap: 14px }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted) }
+h1 { font: 700 clamp(30px, 6vw, 56px)/1.02 var(--display); margin: 0; letter-spacing: -.02em; text-wrap: balance }
+h1 span { color: var(--accent) }
+.lede { max-width: 64ch; color: var(--muted); margin: 0 }
+.counts { display: flex; flex-wrap: wrap; gap: 8px 22px; font: 500 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums }
+.counts b { color: var(--fg); font-weight: 500 }
+
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding-block: 12px }
+.bar .wrap { display: grid; gap: 10px }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+input[type=search], select, .field input, .field textarea, .field select {
+  font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; min-width: 0 }
+input[type=search] { flex: 1 1 260px }
+.pill { font: 500 13px var(--body); border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 6px 12px; border-radius: 999px; cursor: pointer }
+.pill[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg) }
+.btn { font: 600 14px var(--body); background: var(--accent); color: var(--accent-ink); border: 0; padding: 9px 14px; border-radius: 8px; cursor: pointer }
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line) }
+
+main { padding-block: 22px 40px; display: grid; gap: 40px }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px }
+.card { display: grid; grid-template-rows: auto 1fr; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; cursor: pointer; text-align: left; padding: 0; font: inherit; color: inherit; transition: transform .15s ease }
+.card:hover { transform: translateY(-2px) }
+.poster { position: relative; aspect-ratio: 3 / 4; max-width: 100%; padding: 14px 16px; display: flex; flex-direction: column; justify-content: space-between; color: #fff; overflow: hidden }
+.poster::before, .poster::after { content: ""; position: absolute; top: 0; bottom: 0; width: 9px;
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,.55) 0 7px, transparent 7px 14px) }
+.poster::before { left: 0 } .poster::after { right: 0 }
+.poster .tc { font: 500 11px var(--mono); letter-spacing: .08em; opacity: .85; display: flex; justify-content: space-between; gap: 8px }
+.poster .pt { font: 700 20px/1.12 var(--display); text-wrap: balance; text-shadow: 0 1px 12px rgba(0,0,0,.35) }
+.poster .badge { align-self: flex-start; font: 500 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; background: rgba(0,0,0,.42); padding: 3px 7px; border-radius: 4px }
+.meta { padding: 12px 14px 14px; display: grid; gap: 6px; align-content: start; min-width: 0 }
+.meta .who { font-size: 13px; color: var(--muted) }
+.chips { display: flex; flex-wrap: wrap; gap: 5px }
+.chip { font: 500 11px var(--mono); background: var(--chip); color: var(--fg); padding: 2px 7px; border-radius: 4px }
+.chip.user { background: var(--accent); color: var(--accent-ink) }
+.empty { padding: 40px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: var(--r) }
+
+section h2 { font: 700 22px/1.2 var(--display); margin: 0 0 6px }
+section > p { color: var(--muted); margin: 0 0 16px; max-width: 70ch }
+.hubs { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px }
+.hub { display: grid; gap: 4px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); text-decoration: none; color: var(--fg) }
+.hub b { font-weight: 600 } .hub span { font-size: 13px; color: var(--muted) } .hub em { font: 500 12px var(--mono); color: var(--accent); font-style: normal }
+
+form.add { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px }
+.field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0 }
+.field.wide { grid-column: 1 / -1 }
+.form-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center }
+.note { font-size: 13px; color: var(--muted) }
+
+dialog { border: 1px solid var(--line); border-radius: 14px; padding: 0; background: var(--surface); color: var(--fg); width: min(720px, calc(100vw - 32px)); max-height: calc(100dvh - 40px) }
+dialog::backdrop { background: rgba(5,6,10,.6) }
+.dlg { display: grid; grid-template-columns: 200px 1fr; }
+.dlg .poster { aspect-ratio: auto; min-height: 260px }
+.dlg .body { padding: 20px 22px; display: grid; gap: 12px; align-content: start; min-width: 0 }
+.dlg h3 { font: 700 24px/1.15 var(--display); margin: 0; text-wrap: balance }
+.specs { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; margin: 0 }
+.specs dt { font: 500 11px/1.9 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted) }
+.specs dd { margin: 0 }
+.links { display: flex; flex-wrap: wrap; gap: 8px }
+.links a { text-decoration: none }
+.close { position: absolute; top: 10px; right: 10px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 999px; width: 34px; height: 34px; cursor: pointer; font-size: 18px; line-height: 1 }
+footer { padding-block: 24px 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px }
+
+@media (max-width: 560px) {
+  .dlg { grid-template-columns: 1fr } .dlg .poster { min-height: 150px }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px }
+  .poster .pt { font-size: 15px }
+}
+@media (prefers-reduced-motion: reduce) { .card { transition: none } .card:hover { transform: none } }
+</style>
+</head>
+<body>
+
+<header class="top wrap">
+  <div class="eyebrow">Archive of generated &amp; AI-made screen work</div>
+  <h1>Synthetic <span>Cinema</span></h1>
+  <p class="lede">Films, series, music videos and ads made with generative AI, from the first AI-written short in 2016 to today's Sora, Veo and Runway productions. Search the archive, open a title to find where it streams, and add anything you spot online.</p>
+  <div class="counts" id="counts"></div>
+</header>
+
+<div class="bar">
+  <div class="wrap">
+    <div class="row">
+      <input type="search" id="q" placeholder="Search titles, creators, tools…" aria-label="Search the archive">
+      <select id="tool" aria-label="Filter by AI tool"></select>
+      <select id="sort" aria-label="Sort">
+        <option value="new">Newest first</option>
+        <option value="old">Oldest first</option>
+        <option value="az">Title A–Z</option>
+      </select>
+    </div>
+    <div class="row" id="types" role="group" aria-label="Filter by format"></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <section id="discover">
+    <h2>Find new uploads</h2>
+    <p>New AI films land online every day, far faster than any list can track. These are the places where they get posted first. Each link opens a live search or feed.</p>
+    <div class="hubs" id="hubs"></div>
+  </section>
+
+  <section id="add">
+    <h2>Add a title</h2>
+    <p>Found an AI film or series that isn't here? Add it. Your additions are saved in this browser and marked "Added by you".</p>
+    <form class="add" id="addForm">
+      <label class="field">Title<input id="f-title" required maxlength="120" placeholder="e.g. My Sora short"></label>
+      <label class="field">Year<input id="f-year" type="number" min="1990" max="2100" value="2026"></label>
+      <label class="field">Format<select id="f-type"></select></label>
+      <label class="field">Creator<input id="f-creator" maxlength="120" placeholder="Director or studio"></label>
+      <label class="field">AI tools<input id="f-tools" maxlength="160" placeholder="Comma separated: Sora, Veo"></label>
+      <label class="field">Where to watch<input id="f-where" maxlength="80" placeholder="YouTube, Vimeo…"></label>
+      <label class="field wide">Link (optional)<input id="f-url" type="url" maxlength="400" placeholder="https://…"></label>
+      <label class="field wide">About it<textarea id="f-desc" rows="2" maxlength="400"></textarea></label>
+      <div class="form-foot">
+        <button class="btn" type="submit">Add to archive</button>
+        <span class="note" id="addMsg" role="status"></span>
+      </div>
+    </form>
+  </section>
+</main>
+
+<footer class="wrap">
+  Watch links open a search on YouTube or the web for each title, so you always land on the current upload. Facts reflect public reporting; formats and platforms change, so check the source before citing.
+</footer>
+
+<dialog id="dlg"></dialog>
+
+<script>
+const TYPES = ["Short film", "Feature film", "Series", "Music video", "Commercial", "AI-assisted"];
+
+const CATALOG = [
+  { t: "Sunspring", y: 2016, type: "Short film", by: "Oscar Sharp & Ross Goodwin", tools: ["Benjamin (LSTM)"], rt: 9, where: "YouTube", d: "A sci-fi short whose entire screenplay was written by an AI that named itself Benjamin. Thomas Middleditch stars. Widely cited as the first AI-written film." },
+  { t: "It's No Game", y: 2017, type: "Short film", by: "Oscar Sharp & Ross Goodwin", tools: ["Benjamin (LSTM)"], rt: 7, where: "YouTube", d: "Benjamin's second screenplay, a meta comedy about AI writers, starring David Hasselhoff." },
+  { t: "Zone Out", y: 2018, type: "Short film", by: "Oscar Sharp & Ross Goodwin", tools: ["Benjamin (LSTM)", "Face swap"], rt: 6, where: "YouTube", d: "Benjamin wrote, directed and edited this short in 48 hours, assembling it from public-domain footage with face-swapped actors." },
+  { t: "Nothing, Forever", y: 2022, type: "Series", by: "Mismatch Media", tools: ["GPT-3", "Unity"], rt: 0, where: "Twitch", d: "A never-ending, procedurally generated sitcom parody streamed live around the clock, with AI-written dialogue and synthetic voices." },
+  { t: "The Frost", y: 2023, type: "Short film", by: "Waymark", tools: ["DALL·E 2", "D-ID"], rt: 12, where: "YouTube", d: "A chilly mountain-expedition story in which every shot was generated from the script with image models, then animated." },
+  { t: "Genesis (trailer)", y: 2023, type: "Short film", by: "Nicolas Neubert", tools: ["Midjourney", "Runway Gen-2"], rt: 1, where: "YouTube", d: "A cinematic sci-fi trailer that went viral as an early demonstration of image-to-video filmmaking." },
+  { t: "Thank You for Not Answering", y: 2023, type: "Short film", by: "Paul Trillo", tools: ["Runway Gen-2"], rt: 2, where: "YouTube / Vimeo", d: "A dreamlike, voicemail-narrated short about memory and loss, built from Gen-2 clips." },
+  { t: "Pepperoni Hug Spot", y: 2023, type: "Commercial", by: "Pizza Later", tools: ["Runway Gen-2", "GPT-4", "ElevenLabs"], rt: 1, where: "YouTube", d: "An uncanny fake pizza commercial that became one of the first viral AI video memes." },
+  { t: "Synthetic Summer", y: 2023, type: "Commercial", by: "Private Island", tools: ["Runway Gen-2"], rt: 1, where: "YouTube", d: "A surreal parody beer ad of a backyard party melting into AI weirdness." },
+  { t: "The Wizard of AI", y: 2023, type: "Short film", by: "Alan Warburton", tools: ["Midjourney", "Runway", "Stable Diffusion"], rt: 20, where: "Vimeo / YouTube", d: "A video essay about generative AI and creative work, made almost entirely with the tools it critiques." },
+  { t: "The Dog & The Boy", y: 2023, type: "AI-assisted", by: "Netflix Anime Creators Base, WIT Studio, rinna", tools: ["Image generation (backgrounds)"], rt: 3, where: "Netflix / YouTube", d: "An anime short whose background art was AI-generated and then retouched by hand, which drew debate across the anime industry." },
+  { t: "Secret Invasion (opening titles)", y: 2023, type: "AI-assisted", by: "Method Studios for Marvel", tools: ["Generative image models"], rt: 2, where: "Disney+", d: "The Marvel series' title sequence used AI-generated imagery, the first major studio series to do so." },
+  { t: "Air Head", y: 2024, type: "Short film", by: "shy kids", tools: ["Sora"], rt: 1, where: "YouTube", d: "A man with a yellow balloon for a head narrates his life. One of the first films made with early access to OpenAI's Sora." },
+  { t: "The Hardest Part", y: 2024, type: "Music video", by: "Paul Trillo for Washed Out", tools: ["Sora"], rt: 4, where: "YouTube", d: "An infinite-zoom journey through a couple's life, made as the first commissioned music video using Sora." },
+  { t: "Our T2 Remake", y: 2024, type: "Feature film", by: "Collective of 50 AI artists", tools: ["Runway", "Pika", "Midjourney", "Kaiber"], rt: 90, where: "YouTube", d: "A feature-length, deliberately chaotic parody remake of Terminator 2, each scene made by a different AI artist." },
+  { t: "Where the Robots Grow", y: 2024, type: "Feature film", by: "AiMation Studios", tools: ["Generative video & 3D tools"], rt: 87, where: "YouTube", d: "Billed as one of the first feature-length animated films made largely with AI, released free online." },
+  { t: "Get Me Out", y: 2024, type: "Short film", by: "Daniel Antebi", tools: ["Runway"], rt: 5, where: "Runway AI Film Festival", d: "Grand Prix winner at Runway's 2024 AI Film Festival: a man trapped in a house that keeps rearranging itself." },
+  { t: "Next Stop Paris", y: 2024, type: "Short film", by: "TCL", tools: ["Generative video tools"], rt: 12, where: "TCLtv+", d: "A romance short produced by TV maker TCL using generative AI for visuals, with human writers and voice actors." },
+  { t: "Toys\"R\"Us Origin Story", y: 2024, type: "Commercial", by: "Native Foreign", tools: ["Sora"], rt: 1, where: "YouTube", d: "A brand film imagining founder Charles Lazarus as a boy, made largely with Sora." },
+  { t: "Holidays Are Coming (AI remake)", y: 2024, type: "Commercial", by: "Coca-Cola with Secret Level / Silverside", tools: ["Generative video tools"], rt: 1, where: "YouTube / TV", d: "An AI-generated remake of the classic Coca-Cola holiday truck ad, which drew heavy public debate." },
+  { t: "Here", y: 2024, type: "AI-assisted", by: "Robert Zemeckis", tools: ["Metaphysic (face de-aging)"], rt: 104, where: "Cinemas / VOD", d: "A Hollywood feature using real-time generative face replacement to de-age and age Tom Hanks and Robin Wright across decades." },
+  { t: "Unanswered Oddities", y: 2024, type: "Series", by: "Neural Viz (Josh Wallace Kerrigan)", tools: ["Flux", "Veo", "Runway", "Hedra"], rt: 0, where: "YouTube", d: "A deadpan talk-show series from the 'Monoverse', a running AI-generated universe of alien creatures. One of the best-known AI creator series." },
+  { t: "Batman: Dying Is Easy", y: 2024, type: "Short film", by: "Kavan the Kid", tools: ["Midjourney", "Runway"], rt: 3, where: "YouTube", d: "A moody non-commercial fan film made with image and video models." },
+  { t: "Twins Hinahima", y: 2025, type: "Series", by: "Frontier Works & KaKa Creation", tools: ["Generative AI (most frames)"], rt: 0, where: "Japanese TV / streaming", d: "An anime billed as being about 95% AI-generated, with the animation built from AI-processed live-action footage." },
+  { t: "Ancestra", y: 2025, type: "Short film", by: "Eliza McNitt (Primordial Soup × Google DeepMind)", tools: ["Veo", "Imagen"], rt: 9, where: "Tribeca / YouTube", d: "A personal birth story that mixes live action with Veo-generated cosmic imagery. Premiered at Tribeca 2025." },
+  { t: "Total Pixel Space", y: 2025, type: "Short film", by: "Jacob Adler", tools: ["Generative video tools"], rt: 10, where: "Runway AI Film Festival", d: "Grand Prix winner at Runway's 2025 AI Film Festival: a meditation on every image that could possibly exist." },
+  { t: "Echo Hunter", y: 2025, type: "Short film", by: "Kavan the Kid", tools: ["Veo"], rt: 22, where: "YouTube", d: "A sci-fi thriller made with generative video, with union actors providing voices and likenesses." },
+  { t: "Kalshi NBA Finals ad", y: 2025, type: "Commercial", by: "PJ Accetturo", tools: ["Veo 3", "Gemini"], rt: 1, where: "TV / YouTube", d: "A rapid-fire, absurdist ad aired during the NBA Finals, reported to have been made in days for a fraction of a normal budget." },
+  { t: "AI Commissioner", y: 2025, type: "Short film", by: "Particle6", tools: ["Generative video & voice"], rt: 2, where: "YouTube", d: "A comedy sketch featuring the AI 'actress' Tilly Norwood, which sparked a public response from actors' unions." },
+  { t: "Exit Valley", y: 2025, type: "Series", by: "Fable / Showrunner", tools: ["Showrunner"], rt: 0, where: "Showrunner", d: "An animated satire of Silicon Valley from the Showrunner platform, where viewers can generate their own episodes." },
+  { t: "Mahabharat: Ek Dharmayudh", y: 2025, type: "Series", by: "Collective Media Network", tools: ["Generative video tools"], rt: 0, where: "JioHotstar", d: "An AI-generated retelling of the Indian epic, among the largest AI series released on a major streamer." },
+  { t: "El Eternauta", y: 2025, type: "AI-assisted", by: "Netflix", tools: ["Generative VFX"], rt: 0, where: "Netflix", d: "The Argentine sci-fi series used generative AI for a building-collapse sequence, Netflix's first acknowledged generative VFX shot." },
+  { t: "House of David (Season 2)", y: 2025, type: "AI-assisted", by: "Wonder Project", tools: ["Runway", "Midjourney", "Veo"], rt: 0, where: "Prime Video", d: "The biblical drama used generative AI for large battle and landscape sequences." },
+  { t: "Critterz", y: 2026, type: "Feature film", by: "Vertigo Films & Native Foreign", tools: ["OpenAI image & video models"], rt: 0, where: "Planned theatrical release", d: "An animated feature about forest creatures built with OpenAI's tools, announced with a 2026 festival target. Check for current release status.", status: "Announced" },
+  { t: "Chiranjeevi Hanuman – The Eternal", y: 2026, type: "Feature film", by: "Abundantia & Collective Studios", tools: ["Generative video tools"], rt: 0, where: "Planned theatrical release", d: "An AI-generated mythological feature announced for theatrical release in India in 2026.", status: "Announced" },
+];
+
+const HUBS = [
+  { n: "YouTube: AI short films", u: "https://www.youtube.com/results?search_query=AI+generated+short+film&sp=CAI%253D", s: "Newest uploads tagged as AI short films", k: "Live search" },
+  { n: "YouTube: AI series", u: "https://www.youtube.com/results?search_query=AI+generated+series+episode+1&sp=CAI%253D", s: "Episodic AI shows, sorted by upload date", k: "Live search" },
+  { n: "r/aivideo", u: "https://www.reddit.com/r/aivideo/top/?t=week", s: "The largest community for AI video, top of the week", k: "Community" },
+  { n: "Runway AI Film Festival", u: "https://aiff.runwayml.com/", s: "Annual festival winners and finalists", k: "Festival" },
+  { n: "Sora explore feed", u: "https://sora.chatgpt.com/explore", s: "Public clips and shorts made with Sora", k: "Platform feed" },
+  { n: "Showrunner", u: "https://www.showrunner.xyz/", s: "AI-generated animated shows and episodes", k: "Platform" },
+  { n: "Vimeo: AI film", u: "https://vimeo.com/search?q=AI%20film", s: "Festival-style AI shorts from independent artists", k: "Live search" },
+  { n: "Curious Refuge", u: "https://curiousrefuge.com/", s: "AI filmmaking school that showcases student films and contests", k: "Showcase" },
+];
+
+const LS_KEY = "synthetic-cinema:user-titles";
+const loadUser = () => { try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]") } catch { return [] } };
+const saveUser = (list) => { try { localStorage.setItem(LS_KEY, JSON.stringify(list)); return true } catch { return false } };
+let userTitles = loadUser();
+
+const state = { q: "", type: "All", tool: "All", sort: "new" };
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) } return h >>> 0 }
+function posterStyle(item) {
+  const h = hash(item.t), a = h % 360, b = (a + 40 + (h >> 9) % 80) % 360, ang = (h >> 4) % 180;
+  return `background: linear-gradient(${ang}deg, hsl(${a} 55% 22%), hsl(${b} 62% 42%) 60%, hsl(${(b + 30) % 360} 70% 58%))`;
+}
+const timecode = (min, type) => min ? `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}:00:00` : (type === "Series" ? "EPISODIC" : "TBA");
+const typeLabel = (it) => it.status || it.type;
+
+function all() { return [...CATALOG, ...userTitles.map(u => ({ ...u, user: true }))] }
+function toolsList() {
+  const set = new Map();
+  for (const it of all()) for (const t of it.tools || []) { const k = t.split(" (")[0]; set.set(k, (set.get(k) || 0) + 1) }
+  return [...set.entries()].filter(([, n]) => n >= 2 || userTitles.length).sort((a, b) => b[1] - a[1]).map(([k]) => k);
+}
+
+function filtered() {
+  const q = state.q.trim().toLowerCase();
+  let list = all().filter(it =>
+    (state.type === "All" || it.type === state.type) &&
+    (state.tool === "All" || (it.tools || []).some(t => t.startsWith(state.tool))) &&
+    (!q || [it.t, it.by, it.d, it.where, ...(it.tools || [])].join(" ").toLowerCase().includes(q)));
+  const by = { new: (a, b) => b.y - a.y || a.t.localeCompare(b.t), old: (a, b) => a.y - b.y || a.t.localeCompare(b.t), az: (a, b) => a.t.localeCompare(b.t) }[state.sort];
+  return list.sort(by);
+}
+
+function posterHTML(it) {
+  return `<div class="poster" style="${posterStyle(it)}">
+    <div class="tc"><span>${it.y}</span><span>${timecode(it.rt, it.type)}</span></div>
+    <div class="pt">${esc(it.t)}</div>
+    <span class="badge">${esc(typeLabel(it))}</span>
+  </div>`;
+}
+
+function render() {
+  const list = filtered();
+  const grid = $("#grid");
+  grid.innerHTML = list.length ? list.map((it) => `
+    <button class="card" data-key="${esc(it.t)}|${it.y}" aria-label="${esc(it.t)}, ${it.y}">
+      ${posterHTML(it)}
+      <div class="meta">
+        <div class="who">${esc(it.by || "Unknown creator")}</div>
+        <div class="chips">${it.user ? '<span class="chip user">Added by you</span>' : ""}${(it.tools || []).slice(0, 3).map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>
+      </div>
+    </button>`).join("") : `<div class="empty">No titles match. Try a different search, or <a href="#add">add it yourself</a>.</div>`;
+  const items = all();
+  const series = items.filter(i => i.type === "Series").length;
+  const years = items.map(i => i.y);
+  $("#counts").innerHTML = `<span><b>${items.length}</b> titles</span><span><b>${series}</b> series</span><span><b>${Math.min(...years)}–${Math.max(...years)}</b></span><span>Showing <b>${list.length}</b></span>`;
+}
+
+function renderControls() {
+  $("#types").innerHTML = ["All", ...TYPES].map(t => `<button class="pill" aria-pressed="${state.type === t}" data-type="${t}">${t}</button>`).join("");
+  const tools = toolsList();
+  if (state.tool !== "All" && !tools.includes(state.tool)) state.tool = "All";
+  $("#tool").innerHTML = `<option value="All">All AI tools</option>` + tools.map(t => `<option ${t === state.tool ? "selected" : ""}>${esc(t)}</option>`).join("");
+}
+
+function openDetail(it) {
+  const qs = encodeURIComponent(`${it.t} ${it.by || ""}`.trim());
+  const yt = `https://www.youtube.com/results?search_query=${qs}`;
+  const web = `https://duckduckgo.com/?q=${encodeURIComponent(`"${it.t}" AI film`)}`;
+  const own = it.url && /^https?:\/\//.test(it.url) ? `<a class="btn" href="${esc(it.url)}" target="_blank" rel="noopener">Open link</a>` : "";
+  const dlg = $("#dlg");
+  dlg.innerHTML = `<div class="dlg">
+    ${posterHTML(it)}
+    <div class="body">
+      <h3>${esc(it.t)}</h3>
+      <p style="margin:0">${esc(it.d || "")}</p>
+      <dl class="specs">
+        <dt>Year</dt><dd>${it.y}${it.status ? ` · ${esc(it.status)}` : ""}</dd>
+        <dt>Format</dt><dd>${esc(it.type)}</dd>
+        <dt>Creator</dt><dd>${esc(it.by || "Unknown")}</dd>
+        <dt>Runtime</dt><dd>${it.rt ? `${it.rt} min` : (it.type === "Series" ? "Episodic" : "Not listed")}</dd>
+        <dt>AI tools</dt><dd>${esc((it.tools || []).join(", ") || "Not stated")}</dd>
+        <dt>Watch on</dt><dd>${esc(it.where || "Online")}</dd>
+      </dl>
+      <div class="links">
+        ${own}
+        <a class="btn${own ? " ghost" : ""}" href="${yt}" target="_blank" rel="noopener">Find on YouTube</a>
+        <a class="btn ghost" href="${web}" target="_blank" rel="noopener">Search the web</a>
+        ${it.user ? `<button class="btn ghost" id="rm">Remove</button>` : ""}
+      </div>
+    </div>
+  </div>
+  <button class="close" aria-label="Close" id="x">×</button>`;
+  dlg.style.position = "fixed";
+  $("#x").onclick = () => dlg.close();
+  const rm = $("#rm");
+  if (rm) rm.onclick = () => { userTitles = userTitles.filter(u => !(u.t === it.t && u.y === it.y)); saveUser(userTitles); dlg.close(); renderControls(); render() };
+  dlg.showModal();
+}
+
+$("#hubs").innerHTML = HUBS.map(h => `<a class="hub" href="${h.u}" target="_blank" rel="noopener"><em>${h.k}</em><b>${h.n}</b><span>${h.s}</span></a>`).join("");
+$("#f-type").innerHTML = TYPES.map(t => `<option>${t}</option>`).join("");
+
+$("#q").addEventListener("input", e => { state.q = e.target.value; render() });
+$("#tool").addEventListener("change", e => { state.tool = e.target.value; render() });
+$("#sort").addEventListener("change", e => { state.sort = e.target.value; render() });
+$("#types").addEventListener("click", e => { const b = e.target.closest("[data-type]"); if (!b) return; state.type = b.dataset.type; renderControls(); render() });
+$("#grid").addEventListener("click", e => {
+  const c = e.target.closest(".card"); if (!c) return;
+  const it = all().find(i => `${i.t}|${i.y}` === c.dataset.key); if (it) openDetail(it);
+});
+$("#dlg").addEventListener("click", e => { if (e.target.id === "dlg") e.target.close() });
+
+$("#addForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = id => $(id).value.trim();
+  const item = { t: v("#f-title"), y: parseInt(v("#f-year"), 10) || new Date().getFullYear(), type: v("#f-type"), by: v("#f-creator"),
+    tools: v("#f-tools").split(",").map(s => s.trim()).filter(Boolean), where: v("#f-where") || "Online", url: v("#f-url"), d: v("#f-desc"), rt: 0 };
+  if (!item.t) return;
+  if (all().some(i => i.t.toLowerCase() === item.t.toLowerCase() && i.y === item.y)) { $("#addMsg").textContent = "That title is already in the archive."; return }
+  userTitles.push(item);
+  const ok = saveUser(userTitles);
+  e.target.reset(); $("#f-year").value = new Date().getFullYear();
+  $("#addMsg").textContent = ok ? `Added "${item.t}". It's at the top when sorted newest first.` : `Added "${item.t}" for this visit. This browser blocks saving, so it will be gone after a reload.`;
+  renderControls(); render();
+});
+
+renderControls(); render();
+</script>
+</body>
+</html>
